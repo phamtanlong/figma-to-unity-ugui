@@ -47,6 +47,9 @@ namespace FigmaImporter.Editor
         public static void ApplyFigmaStyleToTMP(TextMeshProUGUI tmp, Style style, float scale)
         {
             tmp.fontSize = style.fontSize * scale;
+            tmp.fontSizeMax = style.fontSize * scale;
+            tmp.raycastTarget = false;
+            tmp.enableAutoSizing = true;
             var fontLinksId = AssetDatabase.FindAssets("t:FontLinks")[0];
             FontLinks fl = AssetDatabase.LoadAssetAtPath<FontLinks>(AssetDatabase.GUIDToAssetPath(fontLinksId));
 

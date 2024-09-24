@@ -31,7 +31,7 @@ namespace FigmaImporter.Editor.EditorTree
 				if (MultiColumnHeaderState.CanOverwriteSerializedFields(m_MultiColumnHeaderState, headerState))
 					MultiColumnHeaderState.OverwriteSerializedFields(m_MultiColumnHeaderState, headerState);
 				m_MultiColumnHeaderState = headerState;
-				
+
 				var multiColumnHeader = new MyMultiColumnHeader(headerState);
 				if (firstInit)
 					multiColumnHeader.ResizeToFit ();
@@ -41,28 +41,28 @@ namespace FigmaImporter.Editor.EditorTree
 				m_Initialized = true;
 			}
 		}
-		
+
 		IList<NodeTreeElement> GetData(IList<Node> nodes, ref int idCounter, int depth = -1)
 		{
 			List<NodeTreeElement> result = new List<NodeTreeElement>();
 			int currentDepth = depth;
 			if (currentDepth == -1)
 			{
-				result.Add(new NodeTreeElement("Root", "Root", ActionType.None, null, currentDepth, idCounter));
+				result.Add(new NodeTreeElement(null, "Root", "Root", ActionType.None, null, currentDepth, idCounter));
 				idCounter++;
 				currentDepth++;
 			}
 
 			foreach (var node in nodes)
 			{
-				result.Add(new NodeTreeElement(node.name,node.id, ActionType.None, null, currentDepth, idCounter));
+				result.Add(new NodeTreeElement(node, node.name, node.id, ActionType.None, null, currentDepth, idCounter));
 				idCounter++;
 				if (node.children != null)
-					result.AddRange(GetData(node.children, ref idCounter, currentDepth + 1));				
+					result.AddRange(GetData(node.children, ref idCounter, currentDepth + 1));
 			}
 
 			// generate some test data
-			return result; 
+			return result;
 		}
 
 		public void OnGUI(Rect rect, List<Node> nodes)
@@ -86,7 +86,7 @@ namespace FigmaImporter.Editor.EditorTree
 			canSort = false;
 			height = DefaultGUI.defaultHeight;
 		}
-		
+
 	}
 
 }

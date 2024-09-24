@@ -30,7 +30,7 @@ namespace FigmaImporter.Editor
                 }
             }
         }
-        
+
         public static void AnalyzeSVGMode(IList<Node> nodes, IList<NodeTreeElement> nodesTreeElements)
         {
             foreach (var node in nodes)
@@ -46,7 +46,7 @@ namespace FigmaImporter.Editor
         private static void AnalyzeSingleNodeSVG(Node node, NodeTreeElement treeElement)
         {
             #if VECTOR_GRAHICS_IMPORTED
-            if (node.type != "TEXT" && (node.children == null || node.children.Length == 0))
+            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0))
             {
                 treeElement.actionType = ActionType.SvgRender;
             }
@@ -56,10 +56,22 @@ namespace FigmaImporter.Editor
             }
             #endif
         }
-        
+
+        public static ActionType AnalyzeSingleNode(Node node)
+        {
+            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0))
+            {
+                return ActionType.Render;
+            }
+            else
+            {
+                return ActionType.Generate;
+            }
+        }
+
         private static void AnalyzeSingleNode(Node node, NodeTreeElement treeElement)
         {
-            if (node.type != "TEXT" && (node.children == null || node.children.Length == 0))
+            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0))
             {
                 treeElement.actionType = ActionType.Render;
             }
@@ -68,12 +80,12 @@ namespace FigmaImporter.Editor
                 treeElement.actionType = ActionType.Generate;
             }
         }
-        
+
         public static void CheckActions(IList<Node> nodes, IList<NodeTreeElement> nodesTreeElements)
         {
             if (nodes == null)
                 return;
-            
+
             foreach (var node in nodes)
             {
                 var treeElement = nodesTreeElements.First(x=>x.figmaId == node.id);

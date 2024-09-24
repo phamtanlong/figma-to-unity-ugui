@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace FigmaImporter.Editor
@@ -45,7 +46,17 @@ namespace FigmaImporter.Editor
 
         private Node ParseSingleNode(string s)
         {
-            return JsonUtility.FromJson<Node>(FixBraces(s));
+            // return JsonUtility.FromJson<Node>(FixBraces(s));
+            try {
+                return JsonConvert.DeserializeObject<Node>(FixBraces(s));
+            }
+            catch (Exception e) {
+                // Warn: If you get any exception when parse node
+                // Some unsed fields in class Node may be the cause
+                // Comment them can fix
+                Debug.LogException(e);
+                throw;
+            }
         }
 
         private string FixBraces(string s)

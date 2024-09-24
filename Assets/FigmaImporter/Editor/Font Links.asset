@@ -15,3 +15,5 @@ MonoBehaviour:
   _fonts:
   - Name: LieberationSans
     Font: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  - Name: CCBackBeat
+    Font: {fileID: 11400000, guid: d8d84a53d986c4eaf98d975a7b3d6045, type: 2}

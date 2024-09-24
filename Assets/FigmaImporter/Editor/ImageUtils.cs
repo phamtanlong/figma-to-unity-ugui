@@ -18,7 +18,7 @@ namespace FigmaImporter.Editor
             var image = nodeGo.AddComponent<Image>();
             image.sprite = overridenSprite;
         }
-        
+
 #if VECTOR_GRAHICS_IMPORTED
         public static void AddOverridenSvgSprite(GameObject nodeGo, Sprite overridenSprite)
         {
@@ -78,11 +78,11 @@ namespace FigmaImporter.Editor
              var filePath = Application.dataPath + path;
              System.IO.File.WriteAllBytes(filePath, bytes);
              UnityEditor.AssetDatabase.Refresh();
-            
+
         }
 
 #endif
-        
+
         public static Sprite ChangeTextureToSprite(string path)
         {
             TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
@@ -94,10 +94,11 @@ namespace FigmaImporter.Editor
 
         public static void SaveTexture(Texture2D texture, string path)
         {
+            var filePath = Path.Combine(Application.dataPath, path);
+            if (File.Exists(filePath)) return;
             byte[] bytes = texture.EncodeToPNG();
             if (bytes != null)
             {
-                var filePath = Application.dataPath + path;
                 System.IO.File.WriteAllBytes(filePath, bytes);
                 UnityEditor.AssetDatabase.Refresh();
             }
@@ -112,34 +113,59 @@ namespace FigmaImporter.Editor
             else
                 nodeGo.AddComponent<Mask>();
         }
-        
+
         public static async Task RenderNodeAndApply(Node node, GameObject nodeGo, FigmaImporter importer)
         {
             FigmaNodesProgressInfo.CurrentInfo = "Loading image";
             FigmaNodesProgressInfo.ShowProgress(0f);
-            var result = await importer.GetImage(node.id);
+
+            string spriteName = node.spriteName();// $"{node.name}_{node.id.Replace(':', '_')}.png";
+            var path = Path.Combine(importer.GetRendersFolderPath(), spriteName);// $"{importer.GetRendersFolderPath()}/{spriteName}";
+            var absolutePath = Path.Combine(Application.dataPath, path);
+            var assetPath = Path.Combine("Assets", path);
+
+            Texture2D result;
+            if (File.Exists(absolutePath)) {
+                result = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+            } else {
+                result = await importer.GetImage(node, node.id, true, 0);
+            }
+
+            if (result == null) {
+                Debug.LogError($"Can not render node: {node.name}_{node.id.Replace(':', '_')}");
+                return;
+            }
+
             var t = nodeGo.transform as RectTransform;
-            string spriteName = $"{node.name}_{node.id.Replace(':', '_')}.png";
-            
             Image image = null;
             Sprite sprite = null;
             FigmaNodesProgressInfo.CurrentInfo = "Saving rendered node";
             FigmaNodesProgressInfo.ShowProgress(0f);
             try
             {
-                SaveTexture(result, $"/{importer.GetRendersFolderPath()}/{spriteName}");
-                sprite = ImageUtils.ChangeTextureToSprite($"Assets/{importer.GetRendersFolderPath()}/{spriteName}");
-                if (Math.Abs(t.rect.width - sprite.texture.width) < 1f &&
-                    Math.Abs(t.rect.height - sprite.texture.height) < 1f)
-                {
-                    image = nodeGo.AddComponent<Image>();
-                    image.sprite = sprite;
+                SaveTexture(result, path);
+                sprite = ImageUtils.ChangeTextureToSprite(assetPath);//$"Assets/{importer.GetRendersFolderPath()}/{spriteName}");
+                if (sprite == null) {
+                    Debug.LogError($"Null sprite: {spriteName}");
                     return;
                 }
+
+                image = nodeGo.AddComponent<Image>();
+                image.sprite = sprite;
+                return; // I disable check size below
+
+                // // magic here, I don't know why
+                // if (Math.Abs(t.rect.width - sprite.texture.width) < 2f &&
+                //     Math.Abs(t.rect.height - sprite.texture.height) < 2f)
+                // {
+                //     image = nodeGo.AddComponent<Image>();
+                //     image.sprite = sprite;
+                //     return;
+                // }
             }
             catch (Exception e)
             {
-                Debug.LogError(e.Message);
+                Debug.LogException(e);
             }
 
             var child = TransformUtils.InstantiateChild(nodeGo, "Render");

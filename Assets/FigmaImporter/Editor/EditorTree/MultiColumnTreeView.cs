@@ -14,8 +14,8 @@ namespace FigmaImporter.Editor.EditorTree
         const float kRowHeights = 20f;
         const float kToggleWidth = 18f;
 
-        public event Action<string> OnItemClick = delegate(string s) {  };
-        
+        public event Action<Node, string> OnItemClick = delegate(Node node, string s) {  };
+
         // All columns
         enum MyColumns
         {
@@ -73,7 +73,7 @@ namespace FigmaImporter.Editor.EditorTree
         }
 
 
-        // Note we We only build the visible rows, only the backend has the full tree information. 
+        // Note we We only build the visible rows, only the backend has the full tree information.
         // The treeview only creates info for the row list.
         protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
         {
@@ -127,7 +127,7 @@ namespace FigmaImporter.Editor.EditorTree
                     base.RowGUI(args);
                 }
                     break;
-                
+
                 case MyColumns.ActionType:
                     item.data.actionType = (ActionType)EditorGUI.EnumPopup(cellRect, item.data.actionType);
                     break;
@@ -226,7 +226,7 @@ namespace FigmaImporter.Editor.EditorTree
             if (selectedIds.Count == 0)
                 return;
             var treeViewItem = treeModel.Find(selectedIds[0]);
-            OnItemClick(treeViewItem.figmaId);
+            OnItemClick(treeViewItem.node, treeViewItem.figmaId);
         }
     }
 }

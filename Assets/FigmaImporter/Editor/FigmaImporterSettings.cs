@@ -10,7 +10,8 @@ namespace FigmaImporter.Editor
         [SerializeField] private string token = null;
         [SerializeField] private string url = null;
         [SerializeField] private string rendersPath = "FigmaImporter/Renders";
-        
+        [SerializeField] public string PresetsPath = "FigmaImporter/Presets";
+
         public string ClientCode
         {
             get => clientCode;
@@ -41,24 +42,26 @@ namespace FigmaImporter.Editor
             set => rendersPath = value;
         }
 
+        private static FigmaImporterSettings _settings;
+
         public static FigmaImporterSettings GetInstance()
         {
-            FigmaImporterSettings result = null;
+            if (_settings != null) return _settings;
             var assets = AssetDatabase.FindAssets("t:FigmaImporterSettings");
             if (assets == null || assets.Length == 0)
             {
-                result = CreateInstance<FigmaImporterSettings>();
-                AssetDatabase.CreateAsset(result, "Assets/FigmaImporter/Editor/FigmaImporterSettings.asset");
+                _settings = CreateInstance<FigmaImporterSettings>();
+                AssetDatabase.CreateAsset(_settings, "Assets/FigmaImporter/Editor/FigmaImporterSettings.asset");
                 AssetDatabase.Refresh();
             }
             else
             {
-                
+
                 var assetPath = AssetDatabase.GUIDToAssetPath(assets[0]);
-                result = AssetDatabase.LoadAssetAtPath<FigmaImporterSettings>(assetPath);
+                _settings = AssetDatabase.LoadAssetAtPath<FigmaImporterSettings>(assetPath);
             }
 
-            return result;
+            return _settings;
         }
     }
 }

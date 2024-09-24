@@ -1,0 +1,14 @@
+{
+  "name": "runner",
+  "version": "0.1.0",
+  "displayName": "Runner",
+  "description": "Runner",
+  "keywords": [
+    "runner"
+  ],
+  "author": {
+    "name": "phamtanlong"
+  },
+  "dependencies": {
+  }
+}

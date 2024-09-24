@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace FigmaImporter.Editor
@@ -8,9 +11,11 @@ namespace FigmaImporter.Editor
     {
         public string id;
         public string name;
+        public bool visible = true; // default true, do not change
         public string type;
+        public Dictionary<string, NodeProperty> componentProperties;
         public string blendMode;
-        public Node[] children;
+        public List<Node> children;
         public AbsoluteBoundingBox absoluteBoundingBox; // done
         public Constraints constraints; // done
         public bool clipsContent;
@@ -27,6 +32,47 @@ namespace FigmaImporter.Editor
         public string transitionNodeID;
         public float transitionDuration;
         public string transitionEasing;
+        [JsonIgnore] public Node parent;
+
+        public string spriteName() {
+            var layer = getInstanceLayer(this, 0);
+            var layers = id.Replace(':', '_').Split(';').ToList();
+
+            var ids = new List<string>();
+            for (var i = 0; i < layer && i <= layers.Count - 1; i++) {
+                ids.Add(layers[layers.Count - 1 - i]);
+            }
+
+            ids.Reverse();
+
+            return ids.Count > 0 ? $"{name}_{string.Join(";", ids)}.png" : $"{name}_{string.Join(";", layers)}.png";
+        }
+
+        public string objectName() {
+            if (type == "INSTANCE" && componentProperties != null) {
+                var (_, value) = componentProperties.FirstOrDefault(x => x.Value.type == "VARIANT");
+                if (value?.type == "VARIANT") {
+                    return $"{name}~{value.value}";
+                }
+            }
+
+            if (type == "COMPONENT" && name.Contains('=')) {
+                if (parent?.type == "COMPONENT_SET") {
+                    return parent.name + "~" + name.Split('=')[1];
+                }
+            }
+
+            return name;
+        }
+
+        private static int getInstanceLayer(Node node, int count) {
+            while (true) {
+                if (node.type == "INSTANCE") return count;
+                if (node.parent == null) return 0;
+                node = node.parent;
+                count += 1;
+            }
+        }
     }
 
     [Serializable]
@@ -58,7 +104,7 @@ namespace FigmaImporter.Editor
     public class Fill
     {
         public string blendMode;
-        public string visible;
+        public bool visible = true;
         public string type;
         public Color color;
         public string imageRef;
@@ -84,25 +130,25 @@ namespace FigmaImporter.Editor
     {
         public string pattern;
         public float sectionSize;
-        public bool visible;
+        public bool visible = true;
         public Color color;
         public string alignment;
-        public int gutterSize;
+        public float gutterSize;
         public float offset;
         public int count;
     }
-    
+
     [Serializable]
     public class Effect
     {
         public string type;
-        public bool visible;
+        public bool visible = true;
         public Color color;
         public string blendMode;
         public Vector offset;
         public float radius;
     }
-    
+
     [Serializable]
     public class Vector
     {
@@ -139,9 +185,16 @@ namespace FigmaImporter.Editor
         public string textDecoration;
     }
 
+    [Serializable]
     public enum FontWeight
     {
         Thin = 100, Light = 300, Regular = 400, Medium = 500, Bold = 700, Black = 900,
         ThinItalic = 100
+    }
+
+    [Serializable]
+    public class NodeProperty {
+        public string value;
+        public string type;
     }
 }

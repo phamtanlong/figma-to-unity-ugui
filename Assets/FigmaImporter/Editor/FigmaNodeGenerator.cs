@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace FigmaImporter.Editor
 {
-    public class FigmaNodeGenerator
+    public partial class FigmaNodeGenerator
     {
         Vector2 offset = Vector2.zero;
         private RectTransform root = null;
@@ -27,10 +27,10 @@ namespace FigmaImporter.Editor
             FigmaNodesProgressInfo.CurrentNode ++;
             FigmaNodesProgressInfo.CurrentInfo = "Node generation in progress";
             FigmaNodesProgressInfo.ShowProgress(0f);
-            
+
             //RendersFolderの有無の確認
             GenerateRenderSaveFolder(_importer.GetRendersFolderPath());
-            
+
             var boundingBox = node.absoluteBoundingBox;
             if (parent == null)
             {
@@ -38,14 +38,17 @@ namespace FigmaImporter.Editor
             }
 
             var isParentCanvas = parent.GetComponent<Canvas>();
-            
-            if (isParentCanvas)    
-                offset = boundingBox.GetPosition();
-            
-            GameObject nodeGo = null;
-            var treeElement = nodeTreeElements.First(x => x.figmaId == node.id);
 
-            if (treeElement.actionType != ActionType.None)
+            if (isParentCanvas)
+                offset = boundingBox.GetPosition();
+
+            LoadPreset(node, parent);
+            GameObject nodeGo = null;
+            var treeElement = nodeTreeElements?.FirstOrDefault(x => x.figmaId == node.id);
+            var actionType = treeElement?.actionType ?? NodesAnalyzer.AnalyzeSingleNode(node);
+            var sprite = treeElement?.sprite;
+
+            if (actionType != ActionType.None)
             {
                 nodeGo = isParentCanvas? null: TransformUtils.TryToFindPreviouslyCreatedObject(parent, node.id);
                 RectTransform parentT = null;
@@ -56,7 +59,7 @@ namespace FigmaImporter.Editor
                     parentT = parent.GetComponent<RectTransform>();
                     if (isParentCanvas)
                         root = parentT;
-                    nodeGo.name = $"{node.name} [{node.id}]";
+                    nodeGo.name = node.objectName();// $"{node.name} [{node.id}]";
                     rectTransform = nodeGo.AddComponent<RectTransform>();
                     TransformUtils.SetParent(parentT, rectTransform);
                 }
@@ -65,7 +68,7 @@ namespace FigmaImporter.Editor
                     rectTransform = (RectTransform) nodeGo.transform;
                     parent = rectTransform.parent.gameObject;
                     isParentCanvas = parent.GetComponent<Canvas>();
-                    if (isParentCanvas)    
+                    if (isParentCanvas)
                         offset = boundingBox.GetPosition();
                     parentT = (RectTransform)nodeGo.transform.parent;
                 }
@@ -75,52 +78,52 @@ namespace FigmaImporter.Editor
                     TransformUtils.SetConstraints(parentT, rectTransform, node.constraints);
                 ImageUtils.SetMask(node, nodeGo);
             }
-            
-            switch (treeElement.actionType)
+
+            switch (actionType)
             {
                 case ActionType.None:
                     break;
                 case ActionType.Render:
-                    if (treeElement.sprite != null)
+                    if (sprite != null)
                     {
-                        ImageUtils.AddOverridenSprite(nodeGo, treeElement.sprite);
+                        ImageUtils.AddOverridenSprite(nodeGo, sprite);
                         break;
                     }
                     await ImageUtils.RenderNodeAndApply(node, nodeGo, _importer);
                     break;
 #if VECTOR_GRAHICS_IMPORTED
                 case ActionType.SvgRender:
-                    if (treeElement.sprite != null)
+                    if (sprite != null)
                     {
-                        ImageUtils.AddOverridenSvgSprite(nodeGo, treeElement.sprite);
+                        ImageUtils.AddOverridenSvgSprite(nodeGo, sprite);
                         break;
                     }
                     await ImageUtils.RenderSvgNodeAndApply(node, nodeGo, _importer);
                     break;
 #endif
                 case ActionType.Generate:
-                    if (treeElement.sprite != null)
+                    if (sprite != null)
                     {
-                        ImageUtils.AddOverridenSprite(nodeGo, treeElement.sprite);
+                        ImageUtils.AddOverridenSprite(nodeGo, sprite);
                     }
                     else
                     {
                         AddText(node, nodeGo);
                         AddFills(node, nodeGo);
-                        if (node.children == null) return;
+                        if (node.children == null) break;
                     }
-                    if (node.children == null) return;
+                    if (node.children == null) break;
                     await Task.WhenAll(node.children.Select(x => GenerateNode(x, nodeGo, nodeTreeElements))); //todo: Need to fix the progress bar because of simultaneous nodes generation.
                     break;
                 case ActionType.Transform:
-                    
+
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-        }
 
-        
+            if (nodeGo) nodeGo.SetActive(node.visible);
+        }
 
         private void AddText(Node node, GameObject nodeGo)
         {
@@ -129,16 +132,12 @@ namespace FigmaImporter.Editor
                 var tmp = TMPUtils.GetOrAddTMPComponentToObject(nodeGo);
                 tmp.text = node.characters;
                 var style = node.style;
-                TMPUtils.ApplyFigmaStyleToTMP(tmp, style, _importer.Scale);                
+                TMPUtils.ApplyFigmaStyleToTMP(tmp, style, _importer.Scale);
                 tmp.alignment = TMPUtils.FigmaAlignmentToTMP(style.textAlignHorizontal, style.textAlignVertical);
                 tmp.fontStyle = TMPUtils.FigmaFontStyleToTMP(style.textDecoration, style.textCase);
                 //tmp.characterSpacing = style.letterSpacing; //It doesn't work like that, need to make some calculations.
             }
         }
-
-        
-        
-
 
         private void AddFills(Node node, GameObject nodeGo)
         {
@@ -146,9 +145,9 @@ namespace FigmaImporter.Editor
             Image image = nodeGo.GetComponent<Image>();
             if (node.fills.Length > 0f && image == null && nodeGo.GetComponent<Graphic>()==null)
                 image = nodeGo.AddComponent<Image>();
-            
+
             var tmp = nodeGo.GetComponent<TextMeshProUGUI>();
-            
+
             for (var index = 0; index < node.fills.Length; index++)
             {
                 var fill = node.fills[index];
@@ -172,20 +171,21 @@ namespace FigmaImporter.Editor
                         var firstColor = gradient.Length <= 0 ? UnityEngine.Color.white : ColorUtils.ConvertToUnityColor(gradient[0].color);
                         var secondColor = gradient.Length <= 1 ? firstColor : ColorUtils.ConvertToUnityColor(gradient[1].color);
                         var thirdColor = gradient.Length <= 2 ? UnityEngine.Color.white : ColorUtils.ConvertToUnityColor(gradient[2].color);
-                        var fourthColor = gradient.Length <= 3 ? thirdColor : ColorUtils.ConvertToUnityColor(gradient[3].color); 
+                        var fourthColor = gradient.Length <= 3 ? thirdColor : ColorUtils.ConvertToUnityColor(gradient[3].color);
                         tmp.colorGradient = new VertexGradient(firstColor, secondColor, thirdColor, fourthColor);
                         break;
                     default:
                         var tex = gg.GetTexture(fill, node.absoluteBoundingBox.GetSize(), 256);
-                        string fileName = $"{node.name}_{index.ToString()}.png";
-                        ImageUtils.SaveTexture(tex, $"/{_importer.GetRendersFolderPath()}/{fileName}");
+                        string fileName = node.spriteName();// $"{node.name}_{index.ToString()}.png";
+                        Debug.LogError($"{fileName} >>> index = {index}");
+                        ImageUtils.SaveTexture(tex, $"{_importer.GetRendersFolderPath()}/{fileName}");
                         var sprite = ImageUtils.ChangeTextureToSprite($"Assets/{_importer.GetRendersFolderPath()}/{fileName}");
                         image.sprite = sprite;
                         break;
                 }
 
-                if (image != null) 
-                    image.enabled = fill.visible != "false";
+                if (image != null)
+                    image.enabled = fill.visible;
             }
         }
 
