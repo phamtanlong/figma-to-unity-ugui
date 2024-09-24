@@ -11,6 +11,7 @@
     "name": "ManakhovN"
   },
   "dependencies": {
-    "com.unity.textmeshpro": "2.1.4"
+    "com.unity.textmeshpro": "2.1.4",
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   }
 }
