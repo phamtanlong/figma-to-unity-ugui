@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 
 namespace FigmaImporter.Editor
 {
     [CreateAssetMenu(menuName = "FigmaImporter/FontLinks")]
-    public class FontLinks : ScriptableObject
+    public partial class FontLinks : ScriptableObject
     {
         [SerializeField] private List<FontStringPair> _fonts;
         public TMP_FontAsset Get(string name)

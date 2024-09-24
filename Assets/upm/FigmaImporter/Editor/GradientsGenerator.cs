@@ -1,10 +1,11 @@
 ﻿using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace FigmaImporter.Editor
 {
     [CreateAssetMenu(menuName = "FigmaImporter/GradientsGenerator")]
-    public class GradientsGenerator : ScriptableObject //I wanted to make shaders for each gradient, that's why it is SO.
+    public partial class GradientsGenerator : ScriptableObject //I wanted to make shaders for each gradient, that's why it is SO.
     {
         public Texture2D GetTexture(Fill fill, Vector2 nodeSize, int size = 128)
         {

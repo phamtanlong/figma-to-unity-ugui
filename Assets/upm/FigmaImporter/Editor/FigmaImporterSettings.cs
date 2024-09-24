@@ -1,9 +1,8 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace FigmaImporter.Editor
 {
-    public class FigmaImporterSettings : ScriptableObject
+    public partial class FigmaImporterSettings : ScriptableObject
     {
         [SerializeField] private string clientCode = null;
         [SerializeField] private string state = null;
@@ -40,28 +39,6 @@ namespace FigmaImporter.Editor
         {
             get => rendersPath;
             set => rendersPath = value;
-        }
-
-        private static FigmaImporterSettings _settings;
-
-        public static FigmaImporterSettings GetInstance()
-        {
-            if (_settings != null) return _settings;
-            var assets = AssetDatabase.FindAssets("t:FigmaImporterSettings");
-            if (assets == null || assets.Length == 0)
-            {
-                _settings = CreateInstance<FigmaImporterSettings>();
-                AssetDatabase.CreateAsset(_settings, "Assets/FigmaImporter/Editor/FigmaImporterSettings.asset");
-                AssetDatabase.Refresh();
-            }
-            else
-            {
-
-                var assetPath = AssetDatabase.GUIDToAssetPath(assets[0]);
-                _settings = AssetDatabase.LoadAssetAtPath<FigmaImporterSettings>(assetPath);
-            }
-
-            return _settings;
         }
     }
 }
