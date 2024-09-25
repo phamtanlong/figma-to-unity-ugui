@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
 
 namespace FigmaImporter.Editor
@@ -10,17 +9,18 @@ namespace FigmaImporter.Editor
     [CreateAssetMenu(menuName = "FigmaImporter/FontLinks")]
     public partial class FontLinks : ScriptableObject
     {
-        [SerializeField] private List<FontStringPair> _fonts;
-        public TMP_FontAsset Get(string name)
+        [SerializeField] public List<FontStringPair> _fonts = new List<FontStringPair>();
+
+        public TMP_FontAsset Get(string fontName)
         {
-            var font = _fonts?.FirstOrDefault(x => x.Name == name);
+            var font = _fonts.FirstOrDefault(x => x.Name == fontName);
             return font?.Font;
         }
 
-        public void AddName(string font)
+        public void AddName(string fontName)
         {
-            if (_fonts?.FirstOrDefault(x => x.Name == name) == null)
-                _fonts.Add(new FontStringPair(font, null));
+            if (_fonts.FirstOrDefault(x => x.Name == fontName) == null)
+                _fonts.Add(new FontStringPair(fontName, null));
         }
     }
 

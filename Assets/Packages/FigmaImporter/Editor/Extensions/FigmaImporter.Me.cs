@@ -1,8 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace FigmaImporter.Editor {
     public partial class FigmaImporter {
+        private void OnEnable() {
+            FigmaImporterSettings.GetInstance();
+            FontLinks.GetInstance();
+            GradientsGenerator.GetInstance();
+        }
+
         private static void PreprocessNode(Node node) {
             // remove invisible backgrounds
             if (node.background != null) {

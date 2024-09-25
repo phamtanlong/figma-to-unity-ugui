@@ -531,12 +531,15 @@ namespace FigmaImporter.Editor
             {
                 request.timeout = 5;
                 request.SendWebRequest();
-                while (!request.isDone) //request.downloadProgress < 1f)
+                while (request.downloadProgress < 1f)
                 {
                     if (showProgress)
                         FigmaNodesProgressInfo.ShowProgress(request.downloadProgress);
                     await Task.Delay(100);
                 }
+
+                if (showProgress)
+                    FigmaNodesProgressInfo.HideProgress();
 
                 if (!string.IsNullOrEmpty(request.error)) {
                     Debug.LogError($"{request.error}\n{request.url}");
@@ -548,7 +551,6 @@ namespace FigmaImporter.Editor
                 var data = request.downloadHandler.data;
                 Texture2D t = new Texture2D(0, 0);
                 t.LoadImage(data);
-                FigmaNodesProgressInfo.HideProgress();
                 return t;
             }
         }
