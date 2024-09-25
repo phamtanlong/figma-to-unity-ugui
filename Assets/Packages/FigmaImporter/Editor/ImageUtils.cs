@@ -86,6 +86,7 @@ namespace FigmaImporter.Editor
         public static Sprite ChangeTextureToSprite(string path)
         {
             TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (textureImporter == null) return null;
             textureImporter.textureType = TextureImporterType.Sprite;
             AssetDatabase.SaveAssets();
             AssetDatabase.ImportAsset(path);
@@ -108,7 +109,7 @@ namespace FigmaImporter.Editor
         {
             if (!node.clipsContent)
                 return;
-            if (node.fills.Length == 0)
+            if (node.fills.Count == 0)
                 nodeGo.AddComponent<RectMask2D>();
             else
                 nodeGo.AddComponent<Mask>();

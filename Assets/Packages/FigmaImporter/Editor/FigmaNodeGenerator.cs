@@ -42,7 +42,6 @@ namespace FigmaImporter.Editor
             if (isParentCanvas)
                 offset = boundingBox.GetPosition();
 
-            LoadPreset(node, parent);
             GameObject nodeGo = null;
             var treeElement = nodeTreeElements?.FirstOrDefault(x => x.figmaId == node.id);
             var actionType = treeElement?.actionType ?? NodesAnalyzer.AnalyzeSingleNode(node);
@@ -77,6 +76,8 @@ namespace FigmaImporter.Editor
                 if (!isParentCanvas)
                     TransformUtils.SetConstraints(parentT, rectTransform, node.constraints);
                 ImageUtils.SetMask(node, nodeGo);
+
+                LoadPreset(node, nodeGo);
             }
 
             switch (actionType)
@@ -122,7 +123,13 @@ namespace FigmaImporter.Editor
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (nodeGo) nodeGo.SetActive(node.visible);
+            if (nodeGo) {
+                nodeGo.SetActive(node.visible);
+                if (node.is9Slice) {
+                    var image = nodeGo.GetComponent<Image>();
+                    if (image) image.type = Image.Type.Sliced;
+                }
+            }
         }
 
         private void AddText(Node node, GameObject nodeGo)
@@ -143,12 +150,12 @@ namespace FigmaImporter.Editor
         {
             var gg = GetGradientsGenerator();
             Image image = nodeGo.GetComponent<Image>();
-            if (node.fills.Length > 0f && image == null && nodeGo.GetComponent<Graphic>()==null)
+            if (node.fills.Count > 0f && image == null && nodeGo.GetComponent<Graphic>()==null)
                 image = nodeGo.AddComponent<Image>();
 
             var tmp = nodeGo.GetComponent<TextMeshProUGUI>();
 
-            for (var index = 0; index < node.fills.Length; index++)
+            for (var index = 0; index < node.fills.Count; index++)
             {
                 var fill = node.fills[index];
                 if (index != 0)

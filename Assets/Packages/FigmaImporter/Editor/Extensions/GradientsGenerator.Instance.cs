@@ -13,12 +13,14 @@ namespace FigmaImporter.Editor {
                 if (!Directory.Exists("Assets/FigmaImporter/Editor")) {
                     Directory.CreateDirectory("Assets/FigmaImporter/Editor");
                 }
+
                 AssetDatabase.CreateAsset(_instance, "Assets/FigmaImporter/Editor/GradientsGenerator.asset");
                 AssetDatabase.Refresh();
-            } else {
-                var assetPath = AssetDatabase.GUIDToAssetPath(assets[0]);
-                _instance = AssetDatabase.LoadAssetAtPath<GradientsGenerator>(assetPath);
+                assets = AssetDatabase.FindAssets("t:GradientsGenerator");
             }
+
+            var assetPath = AssetDatabase.GUIDToAssetPath(assets[0]);
+            _instance = AssetDatabase.LoadAssetAtPath<GradientsGenerator>(assetPath);
 
             return _instance;
         }

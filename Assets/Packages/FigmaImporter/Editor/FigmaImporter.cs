@@ -13,8 +13,11 @@ using Random = UnityEngine.Random;
 
 namespace FigmaImporter.Editor
 {
-    public class FigmaImporter : EditorWindow
+    public partial class FigmaImporter : EditorWindow
     {
+		public delegate void OnSuccess(string content);
+		public static OnSuccess onSuccess;
+
         [MenuItem("Window/FigmaImporter")]
         static void Init()
         {
@@ -286,7 +289,7 @@ namespace FigmaImporter.Editor
             OnDestroy();
             _nodes = await GetNodeInfo(url);
             FigmaNodesProgressInfo.HideProgress();
-            Terminal.Run("/bin/bash", "-c \"say -v Zoe 'figma load data success'\"");
+            onSuccess?.Invoke("figma load data success");
         }
 
         private string ConvertToApiUrl(string s)
@@ -374,7 +377,7 @@ namespace FigmaImporter.Editor
             }
 
             FigmaNodesProgressInfo.HideProgress();
-            Terminal.Run("/bin/bash", "-c \"say -v Zoe 'figma generate UI success'\"");
+            onSuccess?.Invoke("figma generate ui success");
         }
 
         private async Task<List<Node>> GetNodeInfo(string nodeUrl)
@@ -399,12 +402,12 @@ namespace FigmaImporter.Editor
                 else
                 {
                     var result = www.downloadHandler.text;
-                    await File.WriteAllTextAsync("figma.json", result);
+                    if (!Directory.Exists("Logs")) {
+                        Directory.CreateDirectory("Logs");
+                    }
+                    await File.WriteAllTextAsync("Logs/figma.json", result);
                     FigmaParser parser = new FigmaParser();
                     var nodes = parser.ParseResult(result);
-                    if (removeInvisible) {
-                        nodes.RemoveAll(x => !x.visible);
-                    }
                     foreach (var node in nodes) {
                         PreprocessNode(node);
                     }
@@ -415,17 +418,6 @@ namespace FigmaImporter.Editor
             }
 
             return null;
-        }
-
-        private static void PreprocessNode(Node node) {
-            if (node.children == null) return;
-            if (removeInvisible) {
-                node.children.RemoveAll(x => !x.visible);
-            }
-            foreach (var child in node.children) {
-                child.parent = node;
-                PreprocessNode(child);
-            }
         }
 
         private const string ImagesUrl = "https://api.figma.com/v1/images/{0}?ids={1}&svg_include_id=true&format=png&scale={2}";
@@ -537,8 +529,9 @@ namespace FigmaImporter.Editor
         {
             using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
             {
+                request.timeout = 5;
                 request.SendWebRequest();
-                while (request.downloadProgress < 1f)
+                while (!request.isDone) //request.downloadProgress < 1f)
                 {
                     if (showProgress)
                         FigmaNodesProgressInfo.ShowProgress(request.downloadProgress);

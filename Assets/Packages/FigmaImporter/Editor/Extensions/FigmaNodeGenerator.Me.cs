@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace FigmaImporter.Editor {
     public partial class FigmaNodeGenerator {
-        private static void LoadPreset(Node node, GameObject parent) {
+        private static void LoadPreset(Node node, GameObject origin) {
             var objectName = node.objectName();
 
             var folder = FigmaImporterSettings.GetInstance().PresetsPath;
@@ -19,9 +19,14 @@ namespace FigmaImporter.Editor {
             // if (node.type != "INSTANCE") return;
 
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            var nodeGo = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent.transform);
+            var nodeGo = (GameObject)PrefabUtility.InstantiatePrefab(prefab, origin.transform.parent);
             nodeGo.SetActive(node.visible);
-            Debug.Log($"Preset apply: {nodeGo.name}, parent = {parent.name}");
+
+            // copy RectTransform
+            UnityEditorInternal.ComponentUtility.CopyComponent(origin.transform as RectTransform);
+            UnityEditorInternal.ComponentUtility.PasteComponentValues(nodeGo.transform as RectTransform);
+
+            Debug.Log($"Preset apply: {nodeGo.name}");
         }
     }
 }

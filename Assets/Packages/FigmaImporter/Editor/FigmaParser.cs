@@ -37,7 +37,7 @@ namespace FigmaImporter.Editor
                 }
                 catch (Exception e)
                 {
-                    continue;
+                    Debug.LogException(e);
                 }
             }
 

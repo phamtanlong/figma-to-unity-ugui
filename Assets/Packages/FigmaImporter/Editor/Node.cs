@@ -7,7 +7,7 @@ using UnityEngine;
 namespace FigmaImporter.Editor
 {
     [Serializable]
-    public class Node
+    public partial class Node
     {
         public string id;
         public string name;
@@ -19,8 +19,8 @@ namespace FigmaImporter.Editor
         public AbsoluteBoundingBox absoluteBoundingBox; // done
         public Constraints constraints; // done
         public bool clipsContent;
-        public Fill[] background;
-        public Fill[] fills;
+        public List<Fill> background;
+        public List<Fill> fills;
         public Fill[] strokes;
         public float strokeWeight;
         public string strokeAlign;
@@ -35,6 +35,8 @@ namespace FigmaImporter.Editor
         [JsonIgnore] public Node parent;
 
         public string spriteName() {
+            if (is9Slice) return objectName() + ".png";
+
             var layer = getInstanceLayer(this, 0);
             var layers = id.Replace(':', '_').Split(';').ToList();
 
