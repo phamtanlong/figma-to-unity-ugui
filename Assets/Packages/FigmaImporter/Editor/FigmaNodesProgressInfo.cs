@@ -13,12 +13,14 @@ namespace FigmaImporter.Editor
         {
             if (NodesCount!=0)
                 CurrentTitle = $"Generating node {CurrentNode.ToString()}/{NodesCount.ToString()}";
-            EditorUtility.DisplayProgressBar(CurrentTitle, CurrentInfo, progress);
+            if (FigmaImporterSettings.GetInstance().showLoading)
+                EditorUtility.DisplayProgressBar(CurrentTitle, CurrentInfo, progress);
         }
 
         public static void HideProgress()
         {
-            EditorUtility.ClearProgressBar();
+            if (FigmaImporterSettings.GetInstance().showLoading)
+                EditorUtility.ClearProgressBar();
         }
     }
 }

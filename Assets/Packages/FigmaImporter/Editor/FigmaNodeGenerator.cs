@@ -185,7 +185,7 @@ namespace FigmaImporter.Editor
                         var tex = gg.GetTexture(fill, node.absoluteBoundingBox.GetSize(), 256);
                         string fileName = node.spriteName();// $"{node.name}_{index.ToString()}.png";
                         Debug.LogError($"{fileName} >>> index = {index}");
-                        ImageUtils.SaveTexture(tex, $"{_importer.GetRendersFolderPath()}/{fileName}");
+                        ImageUtils.SaveTexture(tex, node, _importer);
                         var sprite = ImageUtils.ChangeTextureToSprite($"Assets/{_importer.GetRendersFolderPath()}/{fileName}");
                         image.sprite = sprite;
                         break;

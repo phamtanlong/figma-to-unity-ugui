@@ -35,7 +35,7 @@ namespace FigmaImporter.Editor
         [JsonIgnore] public Node parent;
 
         public string spriteName() {
-            if (is9Slice) return objectName() + ".png";
+            if (is9Slice) return $"{name}.png";
 
             var layer = getInstanceLayer(this, 0);
             var layers = id.Replace(':', '_').Split(';').ToList();

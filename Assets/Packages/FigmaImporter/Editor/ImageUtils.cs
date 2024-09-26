@@ -93,16 +93,30 @@ namespace FigmaImporter.Editor
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
-        public static void SaveTexture(Texture2D texture, string path)
-        {
+        // private static void SaveTexture(Texture2D texture, string path)
+        // {
+        //     var filePath = Path.Combine(Application.dataPath, path);
+        //     if (File.Exists(filePath)) return;
+        //     byte[] bytes = texture.EncodeToPNG();
+        //     if (bytes != null)
+        //     {
+        //         File.WriteAllBytes(filePath, bytes);
+        //         AssetDatabase.Refresh();
+        //     }
+        // }
+
+        public static void SaveTexture(Texture2D texture, Node node, FigmaImporter importer) {
+            if (importer == null)
+                importer = (FigmaImporter) EditorWindow.GetWindow(typeof(FigmaImporter));
+            var spriteName = node.spriteName();// $"{node.name}_{node.id.Replace(':', '_')}.png";
+            var path = Path.Combine(importer.GetRendersFolderPath(), spriteName);// $"{importer.GetRendersFolderPath()}/{spriteName}";
             var filePath = Path.Combine(Application.dataPath, path);
             if (File.Exists(filePath)) return;
-            byte[] bytes = texture.EncodeToPNG();
-            if (bytes != null)
-            {
-                System.IO.File.WriteAllBytes(filePath, bytes);
-                UnityEditor.AssetDatabase.Refresh();
-            }
+            var bytes = texture.EncodeToPNG();
+            if (bytes == null) return;
+            File.WriteAllBytes(filePath, bytes);
+            AssetDatabase.Refresh();
+            Debug.Log($"Save Image: {Path.GetFileName(path)}");
         }
 
         public static void SetMask(Node node, GameObject nodeGo)
@@ -144,7 +158,7 @@ namespace FigmaImporter.Editor
             FigmaNodesProgressInfo.ShowProgress(0f);
             try
             {
-                SaveTexture(result, path);
+                SaveTexture(result, node, importer);
                 sprite = ImageUtils.ChangeTextureToSprite(assetPath);//$"Assets/{importer.GetRendersFolderPath()}/{spriteName}");
                 if (sprite == null) {
                     Debug.LogError($"Null sprite: {spriteName}");

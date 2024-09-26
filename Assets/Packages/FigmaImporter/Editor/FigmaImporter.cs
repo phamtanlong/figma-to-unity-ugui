@@ -81,22 +81,26 @@ namespace FigmaImporter.Editor
             EditorGUILayout.LabelField(
                 "Preview on the right side loaded via Figma API. It doesn't represent the final result!!!!", redStyle);
 
-            if (GUILayout.Button("Get Data & Generate"))
-            {
-                GetDataAndGenerate();
-            }
-
             if (GUILayout.Button("Get Node Data"))
             {
                 string apiUrl = ConvertToApiUrl(_settings.Url);
                 GetNodes(apiUrl);
             }
 
+            if (_settings.quickButton) {
+                if (GUILayout.Button("Get Node Data & Generate")) {
+                    GetDataAndGenerate();
+                }
+            }
+
             if (_nodes != null)
             {
-                // DrawAdditionalButtons();
-                // DrawNodeTree();
-                // DrawPreview();
+                if (!_settings.quickButton)
+                {
+                    DrawAdditionalButtons();
+                    DrawNodeTree();
+                    DrawPreview();
+                }
                 ShowExecuteButton();
             }
         }
@@ -106,6 +110,13 @@ namespace FigmaImporter.Editor
 
             // get node data
             await GetNodes(apiUrl);
+
+            if (_nodes == null) {
+                onSuccess?.Invoke("figma fail to load data");
+                return;
+            }
+
+            await LoadAllRenders(_nodes);
 
             // generate nodes
             await GetFile(apiUrl);
@@ -219,23 +230,19 @@ namespace FigmaImporter.Editor
             NodesAnalyzer.CheckActions(_nodes, nodesTreeElements);
         }
 
-        private async Task LoadAllRenders() {
-            //// version 2
+        private async Task LoadAllRenders(List<Node> nodes) {
             var tasks = new List<Task>();
-            foreach (var node in _nodes) {
+            foreach (var node in nodes) {
+                var actionType = NodesAnalyzer.AnalyzeSingleNode(node);
+                if (actionType != ActionType.Render) continue;
                 tasks.Add(GetImage(node, node.id, true, 0));
-                await Task.Delay(200);
+                tasks.Add(Task.Delay(200));
+                if (node.children.Count > 0) {
+                    tasks.Add(LoadAllRenders(node.children));
+                }
             }
 
             await Task.WhenAll(tasks);
-
-            // // version 1
-            // foreach (var node in _nodes) {
-            //     await GetImage(node, node.id, true, 0);
-            // }
-            //
-            // // version 0
-            // await Task.WhenAll(_nodes.Select(x => GetImage(x, x.id, true, 100)));
         }
 
         private async void LoadAllRenders(IList<NodeTreeElement> nodesTreeElements)
@@ -367,8 +374,6 @@ namespace FigmaImporter.Editor
                 await GetNodes(fileUrl);
             }
 
-            if (_treeView == null) await LoadAllRenders();
-
             FigmaNodeGenerator generator = new FigmaNodeGenerator(this);
             foreach (var node in _nodes)
             {
@@ -442,7 +447,6 @@ namespace FigmaImporter.Editor
             }
 
             if (delay > 0.01f) await Task.Delay(delay);
-            WWWForm form = new WWWForm();
             string request = string.Format(ImagesUrl, _fileName, nodeId, _scale);
             var requestResult = await MakeRequest<string>(request, showProgress);
             if (string.IsNullOrEmpty(requestResult)) return null;
@@ -450,14 +454,12 @@ namespace FigmaImporter.Editor
             FigmaNodesProgressInfo.CurrentInfo = "Loading node texture";
             foreach (var s in substrs)
             {
-                if (s.Contains("http"))
-                {
-                    var texture = await LoadTextureByUrl(s, showProgress);
-                    if (texture != null) {
-                        _texturesCache[nodeId] = texture;
-                    }
-                    return texture;
-                }
+                if (!s.Contains("http")) continue;
+                var texture = await LoadTextureByUrl(s, showProgress);
+                if (texture == null) return texture;
+                _texturesCache[nodeId] = texture;
+                ImageUtils.SaveTexture(texture, node, this);
+                return texture;
             }
 
             Debug.LogError($"Not found image: {node?.spriteName() ?? nodeId}");

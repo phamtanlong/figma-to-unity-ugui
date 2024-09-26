@@ -10,6 +10,8 @@ namespace FigmaImporter.Editor
         [SerializeField] private string url = null;
         [SerializeField] private string rendersPath = "FigmaImporter/Renders";
         [SerializeField] public string PresetsPath = "FigmaImporter/Presets";
+        [SerializeField] public bool showLoading = true;
+        [SerializeField] public bool quickButton = false;
         [Header("Texts")]
         [SerializeField] public bool TextAutoSize = false;
         [SerializeField] public bool TextRaycastTarget = false;
