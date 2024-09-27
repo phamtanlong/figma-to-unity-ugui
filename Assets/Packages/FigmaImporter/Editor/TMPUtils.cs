@@ -48,8 +48,8 @@ namespace FigmaImporter.Editor
         {
             tmp.fontSize = style.fontSize * scale;
             tmp.fontSizeMax = style.fontSize * scale;
-            tmp.raycastTarget = FigmaImporterSettings.GetInstance().TextRaycastTarget;
-            tmp.enableAutoSizing = FigmaImporterSettings.GetInstance().TextAutoSize;
+            tmp.raycastTarget = FigmaImporterSettings.GetInstance().textRaycastTarget;
+            tmp.enableAutoSizing = FigmaImporterSettings.GetInstance().textAutoSize;
             // var fontLinksId = AssetDatabase.FindAssets("t:FontLinks")[0];
             // FontLinks fl = AssetDatabase.LoadAssetAtPath<FontLinks>(AssetDatabase.GUIDToAssetPath(fontLinksId));
             var fl = FontLinks.GetInstance();

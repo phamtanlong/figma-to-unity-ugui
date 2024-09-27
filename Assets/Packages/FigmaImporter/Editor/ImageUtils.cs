@@ -106,17 +106,22 @@ namespace FigmaImporter.Editor
         // }
 
         public static void SaveTexture(Texture2D texture, Node node, FigmaImporter importer) {
-            if (importer == null)
-                importer = (FigmaImporter) EditorWindow.GetWindow(typeof(FigmaImporter));
-            var spriteName = node.spriteName();// $"{node.name}_{node.id.Replace(':', '_')}.png";
-            var path = Path.Combine(importer.GetRendersFolderPath(), spriteName);// $"{importer.GetRendersFolderPath()}/{spriteName}";
-            var filePath = Path.Combine(Application.dataPath, path);
-            if (File.Exists(filePath)) return;
-            var bytes = texture.EncodeToPNG();
-            if (bytes == null) return;
-            File.WriteAllBytes(filePath, bytes);
-            AssetDatabase.Refresh();
-            Debug.Log($"Save Image: {Path.GetFileName(path)}");
+            try {
+                if (importer == null)
+                    importer = (FigmaImporter) EditorWindow.GetWindow(typeof(FigmaImporter));
+                var spriteName = node.spriteName();// $"{node.name}_{node.id.Replace(':', '_')}.png";
+                var path = Path.Combine(importer.GetRendersFolderPath(), spriteName);// $"{importer.GetRendersFolderPath()}/{spriteName}";
+                var filePath = Path.Combine(Application.dataPath, path);
+                if (File.Exists(filePath)) return;
+                var bytes = texture.EncodeToPNG();
+                if (bytes == null) return;
+                File.WriteAllBytes(filePath, bytes);
+                AssetDatabase.Refresh();
+                Debug.Log($"Save Image: {Path.GetFileName(path)}");
+            }
+            catch (Exception e) {
+                Debug.LogException(e);
+            }
         }
 
         public static void SetMask(Node node, GameObject nodeGo)

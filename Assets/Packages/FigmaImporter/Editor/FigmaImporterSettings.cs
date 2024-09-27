@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using FigmaImporter.Editor.EditorTree.TreeData;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace FigmaImporter.Editor
 {
@@ -12,9 +16,15 @@ namespace FigmaImporter.Editor
         [SerializeField] public string PresetsPath = "FigmaImporter/Presets";
         [SerializeField] public bool showLoading = true;
         [SerializeField] public bool quickButton = false;
+        [SerializeField] public bool showTree = true;
         [Header("Texts")]
-        [SerializeField] public bool TextAutoSize = false;
-        [SerializeField] public bool TextRaycastTarget = false;
+        [SerializeField] public bool textAutoSize = false;
+        [SerializeField] public bool textRaycastTarget = false;
+        [Header("Hard code Action for Object by Name")]
+        [SerializeField] public List<StringAction> nameActions = new List<StringAction>();
+        [Header("Hard code Render for Components")]
+        [SerializeField] public List<ComponentInfo> renderComponents = new List<ComponentInfo>();
+        [SerializeField] public List<ComponentInfo> tempComponents = new List<ComponentInfo>();
 
         public string ClientCode
         {
@@ -45,5 +55,17 @@ namespace FigmaImporter.Editor
             get => rendersPath;
             set => rendersPath = value;
         }
+    }
+
+    [Serializable]
+    public class StringAction {
+        public string Name;
+        public ActionType Action;
+    }
+
+    [Serializable]
+    public class ComponentInfo {
+        public string Id;
+        public string Name;
     }
 }

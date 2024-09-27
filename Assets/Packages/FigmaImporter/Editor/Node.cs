@@ -13,6 +13,7 @@ namespace FigmaImporter.Editor
         public string name;
         public bool visible = true; // default true, do not change
         public string type;
+        public string componentId;
         public Dictionary<string, NodeProperty> componentProperties;
         public string blendMode;
         public List<Node> children;

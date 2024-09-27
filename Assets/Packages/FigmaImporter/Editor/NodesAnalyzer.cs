@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using FigmaImporter.Editor.EditorTree.TreeData;
-using UnityEditor.TreeViewExamples;
 
 namespace FigmaImporter.Editor
 {
@@ -35,7 +34,7 @@ namespace FigmaImporter.Editor
         {
             foreach (var node in nodes)
             {
-                AnalyzeSingleNodeSVG(node, nodesTreeElements.FirstOrDefault(x=>x.figmaId == node.id));
+                AnalyzeSingleNode(node, nodesTreeElements.FirstOrDefault(x=>x.figmaId == node.id));
                 if (node.children != null)
                 {
                     AnalyzeSVGMode(node.children, nodesTreeElements);
@@ -43,42 +42,36 @@ namespace FigmaImporter.Editor
             }
         }
 
-        private static void AnalyzeSingleNodeSVG(Node node, NodeTreeElement treeElement)
-        {
-            #if VECTOR_GRAHICS_IMPORTED
-            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0))
-            {
-                treeElement.actionType = ActionType.SvgRender;
-            }
-            else
-            {
-                treeElement.actionType = ActionType.Generate;
-            }
-            #endif
-        }
+        public static ActionType AnalyzeSingleNode(Node node) {
+            var render =
+#if VECTOR_GRAHICS_IMPORTED
+            ActionType.SvgRender;
+#else
+            ActionType.Render;
+#endif
 
-        public static ActionType AnalyzeSingleNode(Node node)
-        {
-            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0))
-            {
-                return ActionType.Render;
+            var setting = FigmaImporterSettings.GetInstance();
+
+            // preset list
+            var nameAction = setting.nameActions.FirstOrDefault(x => x.Name == node.name);
+            if (nameAction != null) return nameAction.Action;
+
+            // compoents in list
+            var componentInfo = setting.renderComponents.FirstOrDefault(x => x.Id == node.componentId);
+            if (componentInfo != null) return ActionType.Render;
+
+            if (node.is9Slice) return ActionType.Render;
+
+            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0)) {
+                return render;
             }
-            else
-            {
-                return ActionType.Generate;
-            }
+
+            return ActionType.Generate;
         }
 
         private static void AnalyzeSingleNode(Node node, NodeTreeElement treeElement)
         {
-            if (node.type != "TEXT" && (node.children == null || node.children.Count == 0))
-            {
-                treeElement.actionType = ActionType.Render;
-            }
-            else
-            {
-                treeElement.actionType = ActionType.Generate;
-            }
+            treeElement.actionType = AnalyzeSingleNode(node);
         }
 
         public static void CheckActions(IList<Node> nodes, IList<NodeTreeElement> nodesTreeElements)

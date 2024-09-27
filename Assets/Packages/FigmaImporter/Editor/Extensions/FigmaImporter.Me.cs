@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEditor;
+using UnityEngine;
 
 namespace FigmaImporter.Editor {
     public partial class FigmaImporter {
@@ -10,7 +10,14 @@ namespace FigmaImporter.Editor {
             GradientsGenerator.GetInstance();
         }
 
-        private static void PreprocessNode(Node node) {
+        private void PreprocessNode(Node node) {
+            if (node.type == "COMPONENT") {
+                var setting = FigmaImporterSettings.GetInstance();
+                setting.tempComponents.Add(new ComponentInfo {
+                    Id = node.id, Name = node.name
+                });
+            }
+
             // remove invisible backgrounds
             if (node.background != null) {
                 node.background.RemoveAll(x => !x.visible);
@@ -22,12 +29,13 @@ namespace FigmaImporter.Editor {
             }
 
             // 9 slice
-            if (Is9Slice(node)) {
-                var fill = node.children[0].fills.FirstOrDefault(x => x.imageRef != null);
-                node.fills = new List<Fill> { fill };
-                node.is9Slice = true;
-                node.children.Clear();
-            }
+            node.is9Slice = Is9Slice(node);
+            // if (Is9Slice(node)) {
+            //     var fill = node.children[0].fills.FirstOrDefault(x => x.imageRef != null);
+            //     node.fills = new List<Fill> { fill };
+            //     node.is9Slice = true;
+            //     node.children.Clear();
+            // }
 
             // set parent node
             if (node.children != null) {

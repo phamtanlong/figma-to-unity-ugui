@@ -97,9 +97,12 @@ namespace FigmaImporter.Editor
             {
                 if (!_settings.quickButton)
                 {
-                    DrawAdditionalButtons();
-                    DrawNodeTree();
-                    DrawPreview();
+                    if (_settings.showTree)
+                    {
+                        DrawAdditionalButtons();
+                        DrawNodeTree();
+                        DrawPreview();
+                    }
                 }
                 ShowExecuteButton();
             }
@@ -412,10 +415,13 @@ namespace FigmaImporter.Editor
                     }
                     await File.WriteAllTextAsync("Logs/figma.json", result);
                     FigmaParser parser = new FigmaParser();
+
+                    FigmaImporterSettings.GetInstance().tempComponents.Clear();
                     var nodes = parser.ParseResult(result);
                     foreach (var node in nodes) {
                         PreprocessNode(node);
                     }
+
                     return nodes;
                 }
 
