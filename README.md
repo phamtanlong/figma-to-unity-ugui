@@ -9,7 +9,7 @@ Some features are not ready yet. Some features are impossible to quickly recreat
 You are welcome to contribute. And you are free to use this project for any purpose.
 
 ## Install
-you can add `https://github.com/ManakhovN/FigmaToUnityImporter.git?path=/Assets/FigmaImporter` to Package Manager
+you can add `https://github.com/ManakhovN/FigmaToUnityImporter.git?path=/Assets/Packages/FigmaImporter` to Package Manager
 
 ## Usage
 Firstly, you need to put FigmaImporter into your project.
