@@ -24,7 +24,6 @@ namespace FigmaImporter.Editor
         [SerializeField] public List<StringAction> nameActions = new List<StringAction>();
         [Header("Hard code Render for Components")]
         [SerializeField] public List<ComponentInfo> renderComponents = new List<ComponentInfo>();
-        [SerializeField] public List<ComponentInfo> tempComponents = new List<ComponentInfo>();
 
         public string ClientCode
         {

@@ -416,7 +416,7 @@ namespace FigmaImporter.Editor
                     await File.WriteAllTextAsync("Logs/figma.json", result);
                     FigmaParser parser = new FigmaParser();
 
-                    FigmaImporterSettings.GetInstance().tempComponents.Clear();
+                    FigmaTemp.GetInstance().components.Clear();
                     var nodes = parser.ParseResult(result);
                     foreach (var node in nodes) {
                         PreprocessNode(node);
@@ -464,7 +464,6 @@ namespace FigmaImporter.Editor
                 var texture = await LoadTextureByUrl(s, showProgress);
                 if (texture == null) return texture;
                 _texturesCache[nodeId] = texture;
-                ImageUtils.SaveTexture(texture, node, this);
                 return texture;
             }
 

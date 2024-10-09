@@ -12,8 +12,7 @@ namespace FigmaImporter.Editor {
 
         private void PreprocessNode(Node node) {
             if (node.type == "COMPONENT") {
-                var setting = FigmaImporterSettings.GetInstance();
-                setting.tempComponents.Add(new ComponentInfo {
+                FigmaTemp.GetInstance().components.Add(new ComponentInfo {
                     Id = node.id, Name = node.name
                 });
             }
