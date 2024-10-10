@@ -16,7 +16,7 @@ namespace FigmaImporter.Editor
     public partial class FigmaImporter : EditorWindow
     {
 		public delegate void OnSuccess(string content);
-		public static OnSuccess onSuccess;
+		public static OnSuccess onSuccess = Debug.Log;
 
         [MenuItem("Window/FigmaImporter")]
         static void Init()
@@ -34,7 +34,10 @@ namespace FigmaImporter.Editor
         private static string _fileName;
         private static string _nodeId;
         private float _scale = 1f;
-        public static bool removeInvisible = true;
+
+        // loading image progress bard
+        public bool isLoadingImages = false;
+        public int totalImages, loadedImages;
 
         Dictionary<string, Texture2D> _texturesCache = new Dictionary<string, Texture2D>();
 
@@ -63,8 +66,8 @@ namespace FigmaImporter.Editor
 
             GUILayout.TextArea("Token:" + _settings.Token);
             _settings.Url = EditorGUILayout.TextField("Url", _settings.Url);
-            _settings.RendersPath = EditorGUILayout.TextField("RendersPath", _settings.RendersPath);
-            _settings.PresetsPath = EditorGUILayout.TextField("PresetsPath", _settings.PresetsPath);
+            // _settings.RendersPath = EditorGUILayout.TextField("RendersPath", _settings.RendersPath);
+            // _settings.PresetsPath = EditorGUILayout.TextField("PresetsPath", _settings.PresetsPath);
 
             if (_rootObject == null) _rootObject = FindObjectOfType<Canvas>()?.gameObject;
 
@@ -73,28 +76,35 @@ namespace FigmaImporter.Editor
 
             _scale = EditorGUILayout.Slider("Scale", _scale, 0.01f, 4f);
 
-            removeInvisible = EditorGUILayout.Toggle("Remove Invisible", removeInvisible);
-
-            var redStyle = new GUIStyle(EditorStyles.label);
-
-            redStyle.normal.textColor = UnityEngine.Color.yellow;
-            EditorGUILayout.LabelField(
-                "Preview on the right side loaded via Figma API. It doesn't represent the final result!!!!", redStyle);
+            _settings.delay = EditorGUILayout.IntSlider("Request Delay", _settings.delay, 100, 2000);
+            // _settings.removeInvisible = EditorGUILayout.Toggle("Remove Invisible", _settings.removeInvisible);
+            
+            EditorGUILayout.LabelField($"Texture Cached: {_texturesCache.Count}");
 
             if (GUILayout.Button("Get Node Data"))
             {
                 string apiUrl = ConvertToApiUrl(_settings.Url);
+                _settings.ResetDelay();
                 GetNodes(apiUrl);
             }
 
             if (_settings.quickButton) {
                 if (GUILayout.Button("Get Node Data & Generate")) {
+                    _settings.ResetDelay();
                     GetDataAndGenerate();
                 }
             }
 
             if (_nodes != null)
             {
+                if (_treeView != null) {
+                    if (GUILayout.Button("Load All Renders")) {
+                        var elements = _treeView.TreeView.treeModel.Data;
+                        _settings.ResetDelay();
+                        LoadAllRenders(elements);
+                    }
+                }
+
                 if (!_settings.quickButton)
                 {
                     if (_settings.showTree)
@@ -104,6 +114,14 @@ namespace FigmaImporter.Editor
                         DrawPreview();
                     }
                 }
+
+                if (isLoadingImages) {
+                    var lastRect = GUILayoutUtility.GetLastRect();
+                    lastRect.position += new Vector2(0f, lastRect.height);
+                    EditorGUI.ProgressBar(lastRect, loadedImages / (float)totalImages,
+                        $"Loading Images: {loadedImages}/{totalImages}");
+                }
+                
                 ShowExecuteButton();
             }
         }
@@ -113,13 +131,6 @@ namespace FigmaImporter.Editor
 
             // get node data
             await GetNodes(apiUrl);
-
-            if (_nodes == null) {
-                onSuccess?.Invoke("figma fail to load data");
-                return;
-            }
-
-            await LoadAllRenders(_nodes);
 
             // generate nodes
             await GetFile(apiUrl);
@@ -173,6 +184,8 @@ namespace FigmaImporter.Editor
             var previewRect = new Rect(position.width / 2f, lastRect.yMax + 20, width, height);
             if (lastLoadedPreview != null)
                 GUI.DrawTexture(previewRect, lastLoadedPreview);
+            else 
+                GUI.Label(previewRect, " Loading...", EditorStyles.boldLabel);
         }
 
         private void CalculatePreviewSize(Texture2D lastLoadedPreview, float widthMax, float heightMax, out float width,
@@ -195,18 +208,21 @@ namespace FigmaImporter.Editor
             }
         }
 
-        private void OnDestroy()
-        {
+        private void OnDestroy() {
             if (_treeView != null && _treeView.TreeView != null)
                 _treeView.TreeView.OnItemClick -= ItemClicked;
             _treeView = null;
             _nodes = null;
-            foreach (var texture in _texturesCache)
-            {
-                DestroyImmediate(texture.Value);
+            foreach (var texture in _texturesCache) {
+                try {
+                    DestroyImmediate(texture.Value);
+                }
+                catch (Exception) { /* ignore */
+                }
             }
 
             _texturesCache.Clear();
+            isLoadingImages = false;
         }
 
         private void DrawNodeTree()
@@ -227,25 +243,12 @@ namespace FigmaImporter.Editor
             {
                 _treeView.TreeView.OnItemClick += ItemClicked;
                 NodesAnalyzer.AnalyzeRenderMode(_nodes, nodesTreeElements);
-                LoadAllRenders(nodesTreeElements);
-            }
-
-            NodesAnalyzer.CheckActions(_nodes, nodesTreeElements);
-        }
-
-        private async Task LoadAllRenders(List<Node> nodes) {
-            var tasks = new List<Task>();
-            foreach (var node in nodes) {
-                var actionType = NodesAnalyzer.AnalyzeSingleNode(node);
-                if (actionType != ActionType.Render) continue;
-                tasks.Add(GetImage(node, node.id, true, 0));
-                tasks.Add(Task.Delay(200));
-                if (node.children.Count > 0) {
-                    tasks.Add(LoadAllRenders(node.children));
+                if (!FigmaImporterSettings.GetInstance().lazyPreview) {
+                    LoadAllRenders(nodesTreeElements);
                 }
             }
 
-            await Task.WhenAll(tasks);
+            NodesAnalyzer.CheckActions(_nodes, nodesTreeElements);
         }
 
         private async void LoadAllRenders(IList<NodeTreeElement> nodesTreeElements)
@@ -253,32 +256,30 @@ namespace FigmaImporter.Editor
             if (nodesTreeElements == null || nodesTreeElements.Count == 0)
                 return;
 
-            //// version 2
-            var tasks = new List<Task>();
+            isLoadingImages = true;
+            loadedImages = 0;
+            totalImages = nodesTreeElements.Count;
             foreach (var element in nodesTreeElements) {
-                tasks.Add(GetImage(element.node, element.figmaId, true, 0));
-                await Task.Delay(200);
+                var task = GetImage(element.node, element.figmaId, false);
+                loadedImages++;
+                Repaint();
+                if (!task.IsCompleted) {
+                    var delay = FigmaImporterSettings.GetInstance().delay;
+                    await Task.Delay(delay);
+                }
             }
-            await Task.WhenAll(tasks);
 
-            //// version 1
-            // foreach (var element in nodesTreeElements) {
-            //     await GetImage(element.node, element.figmaId, true, 0);
-            // }
-
-            //// version 0
-            // await Task.WhenAll(nodesTreeElements.Select(x => GetImage(x.node, x.figmaId, true, 100)));
-
+            isLoadingImages = false;
             _lastClickedNode = nodesTreeElements[0].figmaId;
+            onSuccess?.Invoke("load all renders success!");
         }
 
         private async void ItemClicked(Node node, string obj)
         {
-            Debug.Log($"[FigmaImporter] {obj} clicked");
             _lastClickedNode = obj;
             if (!_texturesCache.TryGetValue(obj, out var tex))
             {
-                await GetImage(node, obj, false, 0);
+                await GetImage(node, obj, false);
             }
             Repaint();
         }
@@ -287,9 +288,11 @@ namespace FigmaImporter.Editor
         {
             var lastRect = GUILayoutUtility.GetLastRect();
             var buttonRect = new Rect(lastRect.xMin, this.position.height - 30, lastRect.width, 30f);
-            if (GUI.Button(buttonRect, "Generate nodes"))
+            var totalNode = FigmaTemp.GetInstance().totalNode;
+            if (GUI.Button(buttonRect, $"Generate nodes ({totalNode})"))
             {
                 string apiUrl = ConvertToApiUrl(_settings.Url);
+                _settings.ResetDelay();
                 GetFile(apiUrl);
             }
         }
@@ -417,6 +420,7 @@ namespace FigmaImporter.Editor
                     FigmaParser parser = new FigmaParser();
 
                     FigmaTemp.GetInstance().components.Clear();
+                    FigmaTemp.GetInstance().totalNode = 0;
                     var nodes = parser.ParseResult(result);
                     foreach (var node in nodes) {
                         PreprocessNode(node);
@@ -433,26 +437,39 @@ namespace FigmaImporter.Editor
 
         private const string ImagesUrl = "https://api.figma.com/v1/images/{0}?ids={1}&svg_include_id=true&format=png&scale={2}";
 
-        public async Task<Texture2D> GetImage(Node node, string nodeId, bool showProgress = true, int delay = 0)
+        public async Task<Texture2D> GetImage(Node node, string nodeId, bool showProgress = true)
         {
+            if (_texturesCache.TryGetValue(nodeId, out var tex))
+            {
+                return tex;
+            }
+            
             if (node != null) {
+                Texture2D texture;
+                
+                // check saved image in Assets
                 var spriteName = node.spriteName();
                 var path = Path.Combine(GetRendersFolderPath(), spriteName);
                 var absolutePath = Path.Combine(Application.dataPath, path);
                 var assetPath = Path.Combine("Assets", path);
                 if (File.Exists(absolutePath)) {
-                    Debug.LogWarning($"load cached file: {spriteName}");
-                    var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
-                    if (texture != null) _texturesCache[nodeId] = texture;
+                    texture = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
+                    if (texture != null) {
+                        Debug.LogWarning($"Load cached file: {spriteName}");
+                        _texturesCache[nodeId] = texture;
+                        return texture;
+                    }
+                }
+                
+                // load from Temp folder
+                texture = LoadTempTexture(node.uniqueSpriteName());
+                if (texture != null) {
+                    Debug.LogWarning($"Load temp file: {node.uniqueSpriteName()}");
+                    _texturesCache[nodeId] = texture;
+                    return texture; 
                 }
             }
 
-            if (_texturesCache.TryGetValue(nodeId, out var tex))
-            {
-                return _texturesCache[nodeId];
-            }
-
-            if (delay > 0.01f) await Task.Delay(delay);
             string request = string.Format(ImagesUrl, _fileName, nodeId, _scale);
             var requestResult = await MakeRequest<string>(request, showProgress);
             if (string.IsNullOrEmpty(requestResult)) return null;
@@ -464,6 +481,10 @@ namespace FigmaImporter.Editor
                 var texture = await LoadTextureByUrl(s, showProgress);
                 if (texture == null) return texture;
                 _texturesCache[nodeId] = texture;
+                if (node != null) {
+                    SaveTempTexture(node.uniqueSpriteName(), texture);
+                    Debug.LogWarning($"Save temp file: {node.uniqueSpriteName()}");
+                }
                 return texture;
             }
 
@@ -514,11 +535,16 @@ namespace FigmaImporter.Editor
 
                 if (!string.IsNullOrEmpty(www.error))
                 {
+                    if (www.error.Contains("429 Too Many Requests")) {
+                        FigmaImporterSettings.GetInstance().IncreaseDelay();
+                    }
+
                     Debug.LogError($"{www.error}\n{www.url}");
                     return null;
                 }
                 else
                 {
+                    FigmaImporterSettings.GetInstance().DecreaseDelay();
                     if (typeof(T) == typeof(string)) {
                         return www.downloadHandler.text as T;
                     }
@@ -536,7 +562,7 @@ namespace FigmaImporter.Editor
         {
             using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
             {
-                request.timeout = 5;
+                request.timeout = 10;
                 request.SendWebRequest();
                 while (request.downloadProgress < 1f)
                 {
@@ -549,12 +575,18 @@ namespace FigmaImporter.Editor
                     FigmaNodesProgressInfo.HideProgress();
 
                 if (!string.IsNullOrEmpty(request.error)) {
+                    if (request.error.Contains("429 Too Many Requests")) {
+                        FigmaImporterSettings.GetInstance().IncreaseDelay();
+                    }
+                    
                     Debug.LogError($"{request.error}\n{request.url}");
                     if (!string.IsNullOrEmpty(request.downloadHandler.error)) {
                         Debug.LogError("=> " + request.downloadHandler.error);
                     }
                     return null;
                 }
+
+                FigmaImporterSettings.GetInstance().DecreaseDelay();
                 var data = request.downloadHandler.data;
                 Texture2D t = new Texture2D(0, 0);
                 t.LoadImage(data);

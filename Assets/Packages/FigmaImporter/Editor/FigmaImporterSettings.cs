@@ -8,18 +8,22 @@ namespace FigmaImporter.Editor
 {
     public partial class FigmaImporterSettings : ScriptableObject
     {
-        [SerializeField] private string clientCode = null;
-        [SerializeField] private string state = null;
-        [SerializeField] private string token = null;
-        [SerializeField] private string url = null;
+        [SerializeField] private string clientCode;
+        [SerializeField] private string state;
+        [SerializeField] private string token;
+        [SerializeField] private string url;
         [SerializeField] private string rendersPath = "FigmaImporter/Renders";
         [SerializeField] public string PresetsPath = "FigmaImporter/Presets";
+        [SerializeField] public string tempPath = "Temp/Figma";
         [SerializeField] public bool showLoading = true;
-        [SerializeField] public bool quickButton = false;
+        [SerializeField] public bool quickButton;
         [SerializeField] public bool showTree = true;
+        [SerializeField] public bool lazyPreview = true;
+        [SerializeField] public int delay = 100;
+        [SerializeField] public bool removeInvisible = true;
         [Header("Texts")]
-        [SerializeField] public bool textAutoSize = false;
-        [SerializeField] public bool textRaycastTarget = false;
+        [SerializeField] public bool textAutoSize;
+        [SerializeField] public bool textRaycastTarget;
         [Header("Hard code Action for Object by Name")]
         [SerializeField] public List<StringAction> nameActions = new List<StringAction>();
         [Header("Hard code Render for Components")]

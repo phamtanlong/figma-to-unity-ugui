@@ -18,3 +18,14 @@ MonoBehaviour:
   url: 
   rendersPath: FigmaImporter/Renders
   PresetsPath: FigmaImporter/Presets
+  tempPath: Temp/Figma
+  showLoading: 1
+  quickButton: 0
+  showTree: 1
+  lazyPreview: 0
+  delay: 100
+  removeInvisible: 1
+  textAutoSize: 0
+  textRaycastTarget: 0
+  nameActions: []
+  renderComponents: []

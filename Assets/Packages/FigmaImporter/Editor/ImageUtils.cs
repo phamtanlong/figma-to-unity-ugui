@@ -148,11 +148,13 @@ namespace FigmaImporter.Editor
             if (File.Exists(absolutePath)) {
                 result = AssetDatabase.LoadAssetAtPath<Texture2D>(assetPath);
             } else {
-                result = await importer.GetImage(node, node.id, true, 0);
+                var delay = FigmaImporterSettings.GetInstance().delay;
+                result = await importer.GetImage(node, node.id, true);
+                await Task.Delay(delay);
             }
 
             if (result == null) {
-                Debug.LogError($"Can not render node: {node.name}_{node.id.Replace(':', '_')}");
+                Debug.LogError($"Not Found Image: {node.spriteName()}, Node: {node.objectName()}");
                 return;
             }
 

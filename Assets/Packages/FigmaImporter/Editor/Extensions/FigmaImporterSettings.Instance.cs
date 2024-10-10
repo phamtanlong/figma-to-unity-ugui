@@ -27,5 +27,20 @@ namespace FigmaImporter.Editor
 
             return _settings;
         }
+
+        public void IncreaseDelay() {
+            delay = (int)(delay * 1.5f);
+            if (delay > 5000) delay = 5000;
+        }
+
+        public void DecreaseDelay() {
+            if (delay > 220) {
+                delay -= 20;
+            }
+        }
+
+        public void ResetDelay() {
+            delay = 100;
+        }
     }
 }

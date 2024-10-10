@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ namespace FigmaImporter.Editor {
         }
 
         private void PreprocessNode(Node node) {
+            FigmaTemp.GetInstance().totalNode++;
             if (node.type == "COMPONENT") {
                 FigmaTemp.GetInstance().components.Add(new ComponentInfo {
                     Id = node.id, Name = node.name
@@ -38,7 +40,7 @@ namespace FigmaImporter.Editor {
 
             // set parent node
             if (node.children != null) {
-                if (removeInvisible) {
+                if (FigmaImporterSettings.GetInstance().removeInvisible) {
                     node.children.RemoveAll(x => !x.visible);
                 }
 
@@ -59,6 +61,39 @@ namespace FigmaImporter.Editor {
                 if (node.children[i].fills[0].imageRef != node.children[i + 1].fills[0].imageRef) return false;
             }
 
+            return true;
+        }
+
+        public static Texture2D LoadTempTexture(string fileName) {
+            var tempPath = FigmaImporterSettings.GetInstance().tempPath;
+            if (!Directory.Exists(tempPath)) {
+                Directory.CreateDirectory(tempPath);
+            }
+
+            var path = Path.Combine(tempPath, fileName);
+            if (!File.Exists(path)) {
+                return null;
+            }
+
+            var imageData = File.ReadAllBytes(path);
+            var texture = new Texture2D(2, 2);
+            texture.LoadImage(imageData);
+            // Optionally set the texture filter mode and wrap mode
+            texture.filterMode = FilterMode.Bilinear;
+            texture.wrapMode = TextureWrapMode.Clamp;
+            return texture;
+        }
+
+        public static bool SaveTempTexture(string fileName, Texture2D texture) {
+            var tempPath = FigmaImporterSettings.GetInstance().tempPath;
+            if (!Directory.Exists(tempPath)) {
+                Directory.CreateDirectory(tempPath);
+            }
+
+            var path = Path.Combine(tempPath, fileName);
+            var bytes = texture.EncodeToPNG();
+            if (bytes == null) return false;
+            File.WriteAllBytes(path, bytes);
             return true;
         }
     }

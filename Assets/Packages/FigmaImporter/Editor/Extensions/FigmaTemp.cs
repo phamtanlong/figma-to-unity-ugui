@@ -6,6 +6,7 @@ using UnityEngine;
 namespace FigmaImporter.Editor {
     [CreateAssetMenu(menuName = "FigmaImporter/FigmaTemp")]
     public partial class FigmaTemp : ScriptableObject {
+        [SerializeField] public int totalNode;
         [SerializeField] public List<ComponentInfo> components = new();
 
         private static FigmaTemp _instance;

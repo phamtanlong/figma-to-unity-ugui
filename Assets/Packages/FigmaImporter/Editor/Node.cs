@@ -35,6 +35,10 @@ namespace FigmaImporter.Editor
         public string transitionEasing;
         [JsonIgnore] public Node parent;
 
+        public string uniqueSpriteName() {
+            return $"{name}_{id}.png".Replace(':', '_');
+        }
+
         public string spriteName() {
             if (is9Slice) return $"{name}.png";
 
